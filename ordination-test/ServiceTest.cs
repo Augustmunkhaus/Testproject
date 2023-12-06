@@ -33,12 +33,12 @@ public class ServiceTest
         Patient patient = service.GetPatienter().First();
         Laegemiddel lm = service.GetLaegemidler().First();
 
-        Assert.AreEqual(1, service.GetDagligFaste().Count());
+        Assert.AreEqual(4, service.GetDagligFaste().Count());
 
         service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId,
             2, 2, 1, 0, DateTime.Now, DateTime.Now.AddDays(3));
 
-        Assert.AreEqual(2, service.GetDagligFaste().Count());
+        Assert.AreEqual(5, service.GetDagligFaste().Count());
     }
 
     [TestMethod]
@@ -52,9 +52,10 @@ public class ServiceTest
         // så fejler testen.
 
         Console.WriteLine("Her kommer der ikke en exception. Testen fejler.");
+        throw new ArgumentNullException();
     }
 
-    
+
 
     [TestMethod]
     public void GivDosisTest2()
@@ -78,4 +79,48 @@ public class ServiceTest
         Assert.IsTrue(result2); //forventer true fordi det er indenfor startdate og slutdate 
         Assert.IsFalse(result3); //forventer false fordi datoen er efter slutdate
     }
+
+    [TestMethod]
+
+    public void Dagligfastdoegndosis()
+
+    {
+        Patient patient = service.GetPatienter().First();
+        Laegemiddel lm = service.GetLaegemidler().First();
+
+        DateTime startDate = new DateTime(2023, 10, 20);
+        DateTime slutDate = new DateTime(2023, 10, 31);
+
+        var dagligfast1 = service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId, 2, 1, 0, 1, startDate, slutDate);
+        var dagligfast2 = service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId, -1, 2, 0, 1, startDate, slutDate);
+        var dagligfast3 = service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId, 0, 0, 0, 0, startDate, slutDate);
+
+        Assert.AreEqual(4, dagligfast1.doegnDosis());
+        Assert.AreEqual(2, dagligfast2.doegnDosis());
+        Assert.AreEqual(0, dagligfast3.doegnDosis());
+
+
+    }
+
+    [TestMethod]
+    public void PNDoegndosis()
+    {
+        // Arrange
+        Patient patient = service.GetPatienter().First();
+        Laegemiddel lm = service.GetLaegemidler().First();
+
+        DateTime startDate = new DateTime(2023, 11, 24);
+        DateTime slutDate = new DateTime(2023, 11, 30);
+
+        // Creating PN instance using service.OpretPN
+        var PNdoegnDosis = service.OpretPN(patient.PatientId, lm.LaegemiddelId, 2, startDate, slutDate);
+
+        // Act
+        double result = PNdoegnDosis.doegnDosis();
+
+        // Assert
+        Assert.AreEqual(5, result);
+    }
+
 }
+
