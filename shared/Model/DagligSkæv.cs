@@ -22,10 +22,14 @@ public class DagligSkæv : Ordination {
 	}
 
 	public override double doegnDosis() {
-		// TODO: Implement!
-		//Completed
+        // TODO: Implement!
+        //Completed
+        if (doser.Any(dosis => dosis.antal < 0))
+        {
+            throw new ArgumentNullException("Antallet af doser kan ikke være negativt.");
+        }
 
-		return doser.Sum(dosis => dosis.antal);
+            return doser.Sum(dosis => dosis.antal);
 	}
 
 	public override String getType() {

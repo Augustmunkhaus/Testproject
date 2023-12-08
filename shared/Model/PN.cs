@@ -8,6 +8,10 @@ public class PN : Ordination {
 
     public PN (DateTime startDen, DateTime slutDen, double antalEnheder, Laegemiddel laegemiddel) : base(laegemiddel, startDen, slutDen) {
 		this.antalEnheder = antalEnheder;
+        if(antalEnheder < 0)
+        {
+            throw new ArgumentNullException($"dosis er {antalEnheder}");
+        }
 	}
 
     public PN() : base(null!, new DateTime(), new DateTime()) {
@@ -26,11 +30,11 @@ public class PN : Ordination {
         {
             return false;
         }
-      //  if (antalEnheder < 0)
-        //{
-          //  return false; // Kan ikke give et negativt antal doser
-        //}
-        //dates.Add(givesDen);
+        if (antalEnheder < 0)
+        {
+            return false; // Kan ikke give et negativt antal doser
+        }
+        dates.Add(givesDen);
 
 
         return true;

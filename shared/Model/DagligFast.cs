@@ -28,9 +28,16 @@ public class DagligFast : Ordination {
 	public override double doegnDosis() {
 		// TODO: Implement!
 		// Completed
+		double retur = -1;
+
+		if (MorgenDosis.antal >= 0 || MiddagDosis.antal >= 0 || AftenDosis.antal >= 0 || NatDosis.antal >= 0)
+		{
+			retur = MorgenDosis.antal + MiddagDosis.antal + AftenDosis.antal + NatDosis.antal;
+        }
+            return retur;
+        
 		
 		
-		return (MorgenDosis.antal + MiddagDosis.antal + AftenDosis.antal + NatDosis.antal);
        
 	}
 	

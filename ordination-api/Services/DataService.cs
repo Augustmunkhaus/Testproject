@@ -135,9 +135,15 @@ public class DataService
 
     public PN OpretPN(int patientId, int laegemiddelId, double antal, DateTime startDato, DateTime slutDato) {
         // TODO: Implement! 
+
+
+        if (startDato > slutDato)
+        {
+            // Hvis start datoen er efter slutdatoen, eller vice versa smider den en exception
+            throw new ArgumentException("Start dato kan ikke være før slut dato");
+        }
+
         
-
-
 
         PN pn = new PN(startDato, slutDato, antal, db.Laegemiddler.FirstOrDefault(x => x.LaegemiddelId == laegemiddelId));
 
@@ -167,6 +173,12 @@ public class DataService
     public DagligSkæv OpretDagligSkaev(int patientId, int laegemiddelId, Dosis[] doser, DateTime startDato, DateTime slutDato) {
         // TODO: Implement!
         // completed
+
+        if (startDato > slutDato)
+        {
+            // Hvis start datoen er efter slutdatoen, eller vice versa smider den en exception
+            throw new ArgumentException("Start dato kan ikke være før slut dato");
+        }
 
         DagligSkæv dagligSkæv = new DagligSkæv(startDato, slutDato, db.Laegemiddler.FirstOrDefault(d => d.LaegemiddelId == laegemiddelId), doser);
 
@@ -237,7 +249,6 @@ public class DataService
        
         
 	}
+
     
-
-
 }

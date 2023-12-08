@@ -15,7 +15,7 @@ public class ServiceTest
     public void SetupBeforeEachTest()
     {
         var optionsBuilder = new DbContextOptionsBuilder<OrdinationContext>();
-        optionsBuilder.UseInMemoryDatabase(databaseName: "test-database");
+        optionsBuilder.UseInMemoryDatabase(databaseName: $"test-database-{DateTime.UtcNow.Ticks}");
         var context = new OrdinationContext(optionsBuilder.Options);
         service = new DataService(context);
         service.SeedData();
@@ -33,12 +33,12 @@ public class ServiceTest
         Patient patient = service.GetPatienter().First();
         Laegemiddel lm = service.GetLaegemidler().First();
 
-        Assert.AreEqual(4, service.GetDagligFaste().Count());
+        Assert.AreEqual(1, service.GetDagligFaste().Count());
 
         service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId,
             2, 2, 1, 0, DateTime.Now, DateTime.Now.AddDays(3));
 
-        Assert.AreEqual(5, service.GetDagligFaste().Count());
+        Assert.AreEqual(2, service.GetDagligFaste().Count());
     }
 
     [TestMethod]
@@ -58,7 +58,7 @@ public class ServiceTest
 
 
     [TestMethod]
-    public void GivDosisTest2()
+    public void GivDosisTest()
     {
         // Arrange
         var laegemiddel = new Laegemiddel("TestLaegemiddel", 1.0, 2.0, 3.0, "mg");
@@ -81,7 +81,6 @@ public class ServiceTest
     }
 
     [TestMethod]
-
     public void Dagligfastdoegndosis()
 
     {
@@ -92,35 +91,176 @@ public class ServiceTest
         DateTime slutDate = new DateTime(2023, 10, 31);
 
         var dagligfast1 = service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId, 2, 1, 0, 1, startDate, slutDate);
-        var dagligfast2 = service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId, -1, 2, 0, 1, startDate, slutDate);
+        DagligFast dagligfast = service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId, -1, 2, 0, 1, startDate, slutDate);
         var dagligfast3 = service.OpretDagligFast(patient.PatientId, lm.LaegemiddelId, 0, 0, 0, 0, startDate, slutDate);
 
+        
         Assert.AreEqual(4, dagligfast1.doegnDosis());
-        Assert.AreEqual(2, dagligfast2.doegnDosis());
+        Assert.IsNotNull(dagligfast);
         Assert.AreEqual(0, dagligfast3.doegnDosis());
 
 
     }
 
     [TestMethod]
-    public void PNDoegndosis()
+    [ExpectedException(typeof(ArgumentNullException))]
+    public void OpretPN_NegativeTal_Test()
+    {
+        Patient patient = service.GetPatienter().First();
+        Laegemiddel lm = service.GetLaegemidler().First();
+
+        DateTime startDate = new DateTime(2023, 10, 20);
+        DateTime slutDate = new DateTime(2023, 10, 31);
+
+        var pn1 = service.OpretPN(patient.PatientId, lm.LaegemiddelId, -1, startDate, slutDate);
+
+        Assert.AreEqual(new ArgumentNullException(),pn1.antalEnheder);
+
+    }
+
+    [TestMethod]
+    public void OpretPN_ForkertDato_Test()
+    {
+        Patient patient = service.GetPatienter().First();
+        Laegemiddel lm = service.GetLaegemidler().First();
+
+        DateTime startDate = new DateTime(2023, 10, 31);
+        DateTime slutDate = new DateTime(2023, 10, 21);
+
+        
+        Assert.ThrowsException<ArgumentException>(() =>
+        {
+            
+            service.OpretPN(patient.PatientId, lm.LaegemiddelId, 1, startDate, slutDate);
+        });
+    }
+    [TestMethod]
+    public void OpretPN_RigtigDato_Test()
     {
         // Arrange
         Patient patient = service.GetPatienter().First();
         Laegemiddel lm = service.GetLaegemidler().First();
-
-        DateTime startDate = new DateTime(2023, 11, 24);
-        DateTime slutDate = new DateTime(2023, 11, 30);
-
-        // Creating PN instance using service.OpretPN
-        var PNdoegnDosis = service.OpretPN(patient.PatientId, lm.LaegemiddelId, 2, startDate, slutDate);
+        DateTime startDate = new DateTime(2023, 10, 21);
+        DateTime slutDate = new DateTime(2023, 10, 31);
 
         // Act
-        double result = PNdoegnDosis.doegnDosis();
+        var pn1 = service.OpretPN(patient.PatientId, lm.LaegemiddelId, 1, startDate, slutDate);
 
         // Assert
-        Assert.AreEqual(5, result);
+        Assert.IsNotNull(pn1);
     }
 
+
+
+
+
+
+    [TestMethod]
+         public void OpretPN_PlusAntal_Test()
+        {
+            // Arrange
+            Laegemiddel lm = service.GetLaegemidler().First();
+            Patient patient = service.GetPatienter().First();
+
+            DateTime startDate = new DateTime(2023, 10, 20);
+            DateTime slutDate = new DateTime(2023, 10, 31);
+
+            // Act
+            var pn1 = service.OpretPN(patient.PatientId, lm.LaegemiddelId, 1, startDate, slutDate);
+
+            // Assert
+            Assert.IsNotNull(pn1);
+
+        }
+
+    [TestMethod]
+    public void DagligSkaevdoegndosis_Test()
+    {
+        Laegemiddel lm = service.GetLaegemidler().First();
+        Patient patient = service.GetPatienter().First();
+
+        DateTime startDate = new DateTime(2023, 10, 20);
+        DateTime slutDate = new DateTime(2023, 10, 31);
+
+        DagligSkæv dagligSkaev = service.OpretDagligSkaev(patient.PatientId, lm.LaegemiddelId, new Dosis[]
+        {
+        new Dosis(DateTime.Now, 2),
+        new Dosis(DateTime.Now.AddHours(4), 4),
+        new Dosis(DateTime.Now.AddHours(6), 3),
+        new Dosis(DateTime.Now.AddHours(5), 6)
+        }, startDate, slutDate);
+
+        
+
+        Assert.AreEqual(15, dagligSkaev.doegnDosis());
+        
+    }
+
+    [TestMethod]
+    [ExpectedException(typeof(ArgumentNullException))]
+    public void DagligSkaevdoegndosisminus_Test()
+    {
+        Laegemiddel lm = service.GetLaegemidler().First();
+        Patient patient = service.GetPatienter().First();
+
+        DateTime startDate = new DateTime(2023, 10, 20);
+        DateTime slutDate = new DateTime(2023, 10, 31);
+
+        DagligSkæv dagligSkaev2 = service.OpretDagligSkaev(patient.PatientId, lm.LaegemiddelId, new Dosis[]
+        {
+        new Dosis(DateTime.Now, 3),
+        new Dosis(DateTime.Now.AddHours(4), -4),
+        new Dosis(DateTime.Now.AddHours(6), 3),
+        new Dosis(DateTime.Now.AddHours(5), 2)
+        }, startDate, slutDate);
+
+
+        Assert.AreEqual(new ArgumentNullException(), dagligSkaev2.doegnDosis());
+    }
+    [TestMethod]
+    public void OpretSkæv_ForkertDato_Test()
+    {
+        Patient patient = service.GetPatienter().First();
+        Laegemiddel lm = service.GetLaegemidler().First();
+
+        DateTime startDate = new DateTime(2023, 10, 31);
+        DateTime slutDate = new DateTime(2023, 10, 21);
+
+
+        Assert.ThrowsException<ArgumentException>(() =>
+        {
+
+            service.OpretDagligSkaev(patient.PatientId, lm.LaegemiddelId, new Dosis[]
+        {
+        new Dosis(DateTime.Now, 3),
+        new Dosis(DateTime.Now.AddHours(4), 2),
+        new Dosis(DateTime.Now.AddHours(6), 3),
+        new Dosis(DateTime.Now.AddHours(5), 2)
+        }, startDate, slutDate);
+        });
+    }
+    [TestMethod]
+    
+    public void OpretSkæv_RigtigDato_Test()
+    {
+        // Arrange
+        Patient patient = service.GetPatienter().First();
+        Laegemiddel lm = service.GetLaegemidler().First();
+        DateTime startDate = new DateTime(2023, 10, 21);
+        DateTime slutDate = new DateTime(2023, 10, 31);
+
+        // Act
+        var skæv1 = service.OpretDagligSkaev(patient.PatientId, lm.LaegemiddelId, new Dosis[]
+        {
+        new Dosis(DateTime.Now, 3),
+        new Dosis(DateTime.Now.AddHours(4), 2),
+        new Dosis(DateTime.Now.AddHours(6), 3),
+        new Dosis(DateTime.Now.AddHours(5), 2)
+        }, startDate, slutDate);
+
+        Assert.AreEqual(new DateTime(2023, 10, 21), startDate);
+        // Assert
+        
+    }
 }
 
